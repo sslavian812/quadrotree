@@ -197,8 +197,14 @@ public:
         if(! this->boundary.overlays(box))
             return res;
 
+        if(childrensize == 0 && (box.contains(point) || (box+eps).contains(point)))
+        {
+            res.push_back(point);
+            return res;
+        }
 
-        if(box->contains(this->boundary) || (box+eps)->contains(this->boundary) ) // here is the profit of epsilon!!
+
+        if(box.contains(this->boundary) || (box+eps).contains(this->boundary) ) // here is the profit of epsilon!!
             res = this->getPoints();
         else
         {
@@ -207,7 +213,7 @@ public:
                 if(children[i]!= NULL)
                 {
                     vector<point_2t<T> > t = children[i]->getPoints(box, eps);
-                    insert(res.end(), t.begin(), t.end());
+                    res.insert(res.end(), t.begin(), t.end());
                 }
             }
         }
@@ -220,17 +226,39 @@ public:
         vector<point_2t<T> > res;
 
         if(childrensize == 0)
-            return res.push_back(point);
+        {
+            res.push_back(point);
+            return res;
+        }
         for(int i=0; i<4; ++i)
         {
             if(children[i]!= NULL)
             {
                 vector<point_2t<T> > t = children[i]->getPoints();
-                insert(res.end(), t.begin(), t.end());
+                res.insert(res.end(), t.begin(), t.end());
             }
         }
         return res;
     }
+
+    // локализует внутреннюю вершину, к которой можно подвесить данную точку как лист
+    // вызывать от листа нельзя.
+    CompressedNode<T>* find(point_2t<T> p)
+    {
+        if(! this->boundary.contains(p))
+            return NULL;
+
+        int part = this->boundary.whatPart(p);
+
+
+        if(children[part]!= NULL &&
+                children[part]->boundary.contains(p) &&
+                children[part]->childrensize > 0)
+                return children[part]->find(p);
+
+        return this;  // квадрат, который пересекает точку, но сам её не содержит.
+    }
+
 
 private :
     CompressedNode(aabb<T> box, int part, CompressedNode<T>* node, int part2, CompressedNode<T>* node2, p3i coords)

@@ -11,7 +11,7 @@ find_package(Boost COMPONENTS random REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARYDIR})
 
-set(SOURCES compressed-quad-tree-test.cpp) # quad-tree-test.cpp skip-quad-tree-test.cpp rectangle-test.cpp)
+set(SOURCES compressed-quad-tree-test.cpp skip-quad-tree-test.cpp rectangle-test.cpp) # skip-node-test.cpp quad-tree-test.cpp )
 
 add_executable(quad-tree-test ${SOURCES})
 target_link_libraries(quad-tree-test ${GTEST_BOTH_LIBRARIES})

@@ -8,6 +8,6 @@ project(quad-tree-example)
 add_executable(compressed-quad-tree compressed-quad-tree.cpp)
 target_link_libraries(compressed-quad-tree visualization)
 
-#add_executable(skip-quad-tree skip-quad-tree.cpp)
-#target_link_libraries(skip-quad-tree visualization)
+add_executable(skip-quad-tree skip-quad-tree.cpp)
+target_link_libraries(skip-quad-tree visualization)
 

@@ -67,7 +67,7 @@ struct aabb
         dy = dimension.y;
         x = position.x;
         y = position.y;
-        p0(x, y), p1(x+dx, y), p2(x, y+dy), p3(x+dx, y+dy);
+        p0=point_2t<T>(x, y), p1=point_2t<T>(x+dx, y), p2=point_2t<T>(x, y+dy), p3=point_2t<T>(x+dx, y+dy);
         if(other.contains(p0) || other.contains(p1) || other.contains(p2) || other.contains(p3))
             return true;
 

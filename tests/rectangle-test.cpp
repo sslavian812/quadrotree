@@ -1,50 +1,51 @@
-#include <gtest/gtest.h>
+//#include <gtest/gtest.h>
 
-#include <boost/assign/list_of.hpp>
-#include <misc/random_utils.h>
+//#include <boost/assign/list_of.hpp>
+//#include <misc/random_utils.h>
+//#include <cg/primitives/point.h>
+//#include <skip-quad-tree.h>
+//#include <vector>
 
-#include <node.h>
-#include <vector>
+//using std::vector;
+
+//using cg::point_2;
+//using cg::point_2t;
+
+//TEST(simple_contains, manual_points)
+//{
+//    vector<point_2 > rpoints;
+//    vector<point_2 > points;
+
+//    SkipQuadTree tree(256);
 
 
-TEST(simple_contains, manual_points)
-{
-    vector<Point<double> > rpoints;
-    vector<Point<double> > points;
-    Node<double> root;
 
-    using util::uniform_random_real;
-    uniform_random_real<double> r((double)0, (double)200.0);
+//    using util::uniform_random_real;
+//    uniform_random_real<double> r((double)0, (double)250.0);
 
-    const int MAX = 10000;
+//    const int MAX = 10000;
 
-    for(int i=0; i<MAX; ++i)
-    {
-        Point<double> p(r(), r());
-        rpoints.push_back(p);
-        root.insert(p);
-    }
+//    for(int i=0; i<MAX; ++i)
+//    {
+//        point_2 p(r(), r());
+//        points.push_back(p);
+//        root.insert(p);
+//    }
 
-    for(int i=0; i<MAX; ++i)
-    {
-        Point<double> p(-r(), -r());
-        points.push_back(p);
-        root.insert(p);
-    }
-
-    bool flag = false;
-
-    // existing points
-
-    vectort<Point<double> > rect = root.getPoints(AABB<double>(Point<double>(100, 100), Point<double>(100, 100)));
-
-    for(int i=0; i<rpoints.size(); ++i)
-    {
-        EXPECT_TRUE(root.contains(points[i]));
-    }
+//    // заполнили как-нибудь дерево
 
 
 
 
+//    vectort<point_2 > rect = root.getPoints(AABB<double>(point_2(100, 100), point_2(100, 100)));
 
-}
+//    for(int i=0; i<rpoints.size(); ++i)
+//    {
+//        EXPECT_TRUE(root.contains(points[i]));
+//    }
+
+
+
+
+
+//}

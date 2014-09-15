@@ -3,7 +3,7 @@
 #include <boost/assign/list_of.hpp>
 #include <misc/random_utils.h>
 
-#include <skip-quad-tree.h>
+#include <skipNode.h>
 
 #include <vector>
 #include <cg/primitives/point.h>
@@ -17,21 +17,17 @@ using cg::point_2t;
 using cg::point_2;
 
 
-TEST(skip_tree_contains, random_point_2ts)
+TEST(skip_node_contains, random_point_2ts)
 {
 
     vector<point_2 > point_2ts;
+    point_2ts.push_back(point_2t<double>(2,2));
 
-    SkipQuadTree<double> tree(256);
-    point_2t<double> p(2,2);
+    aabb<double> a(point_2t<double>(0,0), point_2t<double>(256, 256));
+    SkipNode<double> root(a, point_2t<double>(2,2));
 
-    point_2ts.push_back(p);
-    cout<<"insering: "<<p<<endl;
-    tree.insert(p);
-
-    cout<<p<<endl;
-    EXPECT_TRUE(tree.contains(p));
-
+    cout<<point_2ts[0]<<endl;
+    EXPECT_TRUE(root.contains(point_2ts[0]));
 
     using util::uniform_random_real;
     uniform_random_real<double> r((double) 0.0, (double)200.0);
@@ -42,13 +38,13 @@ TEST(skip_tree_contains, random_point_2ts)
     {
         point_2 p(r(), r());
         point_2ts.push_back(p);
-        tree.insert(p);
+        root.insert(p);
     }
 
     // existing point_2ts
     for(int i=0; i<point_2ts.size(); ++i)
     {
-        EXPECT_TRUE(tree.contains(point_2ts[i]));
+        EXPECT_TRUE(root.contains(point_2ts[i]));
     }
 
 
@@ -67,9 +63,9 @@ TEST(skip_tree_contains, random_point_2ts)
         }
 
         if(!exists)
-            EXPECT_FALSE(tree.contains(p));
+            EXPECT_FALSE(root.contains(p));
         else
-            EXPECT_TRUE(tree.contains(p));
+            EXPECT_TRUE(root.contains(p));
 
     }
 }

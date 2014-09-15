@@ -1,9 +1,13 @@
 #include <cg/primitives/point.h>
 #include <aabb.h>
-#include <skipNode.h>
+#include <compressedNode.h>
 #include <vector>
 #include <map>
 #include <misc/random_utils.h>
+#include <algorithm>
+#include <utility>
+
+using namespace std;
 
 using std::vector;
 using util::uniform_random_real;
@@ -17,20 +21,23 @@ class SkipQuadTree
 {
 
 private:
-    vector<SkipNode<T> * > trees;
-    vector< map<p3i, SkipNode<T>* > > index;
+
+    vector< map<p3i, CompressedNode<T>* > > index;
     aabb<T> max_area;
-    uniform_random_real<double> r;
+    uniform_random_real<double> *r;
 
     void push(point_2t<T> p)
     {
-        trees.push_back(new SkipNode<T>(max_area, p));
-        index[trees.size()-1][trees.back()->c] = trees.back();
+        CompressedNode<T>* node = new CompressedNode<T>(max_area, p);
+        trees.push_back(node);
+        int level = trees.size()-1;
+        p3i coords = trees.back()->c;
+        index[level][coords] = node;
     }
 
     bool contains_impl(point_2t<T> p, int curlevel, p3i coords)
     {
-        SkipNode<T> * curnode = index[curlevel][coords];
+        CompressedNode<T> * curnode = index[curlevel][coords];
                 curnode = curnode->find(p);
 
         //TODO: проверить, бывает ли так, что вернулся NULL;
@@ -38,11 +45,11 @@ private:
             return false;   // так быть не может, но мало ли
 
         //TODO: проверить, бывает ли так
-        if(curnode->childrensize == 0 && cur->point == p)
+        if(curnode->childrensize == 0 && curnode->point == p)
                 return true;  // так вроде тоже не бывает, так как лист вернуть нельзя
 
         // проверим, что точка в одном из чилдов-листьев.
-        int part = curnode->boundary->whatPart(p);
+        int part = curnode->boundary.whatPart(p);
         if(curnode->children[part] != NULL &&
                 curnode->children[part]->childrensize == 0 &&
                 curnode->children[part]->point == p)
@@ -51,14 +58,14 @@ private:
         if(curlevel == 0)
             return false;
 
-        p3i coords = curnode->c;
+        p3i curcoords = curnode->c;
 
-        return contains_impl(p, curlevel-1, coords);
+        return contains_impl(p, curlevel-1, curcoords);
     }
 
     bool insert_impl(point_2t<T> p, int level, p3i coords)
     {
-        SkipNode<T> * cur = index[level][coords];
+        CompressedNode<T> * cur = index[level][coords];
         cur = cur->find(p);
         if(level == 0)
         {
@@ -68,7 +75,7 @@ private:
         }
         else
         {
-            if(insert_impl(p, level-1, cur->c) && r()>0)
+            if(insert_impl(p, level-1, cur->c) && (*r)()>0)
             {
                 CompressedNode<T> * temp_node = cur->insert(p);
                 // нода - родитель листа с вставленой точкой.
@@ -87,9 +94,9 @@ private:
         }
     }
 
-    vecotor<point_2t<T> > getPoints(aabb<T> box, double eps=0.0, int level, SkipNode<T>* node)
+    vector<point_2t<T> > getPoints_impl(aabb<T> box, double eps, int level, CompressedNode<T>* node)
     {
-        vecotor<point_2t<T> > res;
+        vector<point_2t<T> > res;
         if(!box.overlays(node->boundary))
             return res;
         if(box.contains(node->boundary) || (box+eps).contains(node->boundary))
@@ -108,8 +115,8 @@ private:
                     continue;
                 if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
                 {
-                    vecotor<point_2t<T> > v = getPoints(box, eps, level, node->children[i]);
-                    std::insert(res.end(), v.begin(), v.end());
+                    vector<point_2t<T> > v = getPoints_impl(box, eps, level, node->children[i]);
+                    res.insert(res.end(), v.begin(), v.end());
                     childUsed[i] = true;
                     ++used;
                 }
@@ -124,16 +131,17 @@ private:
     }
 
 public:
-    SkipQuadTree(T side)
+    vector<CompressedNode<T> * > trees;
+    SkipQuadTree(T side=2048)
     {
         max_area = aabb<T>(side);
-        r = uniform_random_real<double>(-1.0, 1.0);
+        r = new uniform_random_real<double>(-1.0, 1.0);
     }
 
-    bool contains(point_2t<T> p); // OK
-    bool insert(point_2t<T> p); // OK
-    vecotor<point_2t<T> > getPoints(aabb<T> box, double eps=0.0); // OK
-    vecotor<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0); // OK
+    //bool contains(point_2t<T> p); // OK
+    //bool insert(point_2t<T> p); // OK
+    //vector<point_2t<T> > getPoints(aabb<T> box, double eps=0.0); // OK
+    //vector<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0); // OK
 
 
     bool contains(point_2t<T> p)
@@ -157,28 +165,39 @@ public:
     {
         int curlevel = trees.size()-1;
         if(curlevel < 0)
-            return false;
+        {
+            push(p);
+            return true;
+        }
 
         bool flag = insert_impl(p, curlevel, trees[curlevel]->c);
-        if(r()>0)
+        if((*r)()>0)
             push(p);
         return flag;
     }
 
-    vecotor<point_2t<T> > getPoints(aabb<T> box, double eps=0.0)
+    vector<point_2t<T> > getPoints(aabb<T> box, double eps=0.0)
     {
         int level = trees.size()-1;
         if(level<0)
-            return vecotor<point_2t<T> >;
-        SkipNode<T> * node = tree[level];
+        {
+            vector<point_2t<T> > res;
+            return res;
+        }
+        CompressedNode<T> * node = trees[level];
         return getPoints_impl(box, eps, level, node);
     }
 
-    vecotor<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0)
+    vector<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0)
     {
-        point_2t<T> dim = point_2t(rightDown.x-leftUp.x, leftUp.y - rightDown.y);
-        point_2t<T> pos = point_2t(leftUp.x, leftUp.y-dim.y);
+        point_2t<T> dim(rightDown.x-leftUp.x, leftUp.y - rightDown.y);
+        point_2t<T> pos(leftUp.x, leftUp.y-dim.y);
         aabb<T> box(pos, dim);
         return getPoints(box, eps);
+    }
+
+    int getMaxLevel()
+    {
+        return trees.size()-1;
     }
 };
