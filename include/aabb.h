@@ -25,6 +25,14 @@ struct aabb
     aabb(point_2t<T> p, point_2t<T> d): position(p), dimension(d)
     {}
 
+    static aabb<T> getByPoints(point_2t<T> leftUp, point_2t<T> rightDown)
+    {
+        point_2t<T> dim(rightDown.x-leftUp.x, leftUp.y - rightDown.y);
+        point_2t<T> pos(leftUp.x, leftUp.y-dim.y);
+        aabb<T> box(pos, dim);
+        return box;
+    }
+
     bool contains(point_2t<T> point)
     {
         if((point.x >= position.x) && (point.x < position.x + dimension.x))

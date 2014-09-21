@@ -8,6 +8,7 @@
 #include <cg/io/point.h>
 #include <cg/primitives/point.h>
 
+
 #include "skip-quad-tree.h"
 
 
@@ -61,8 +62,6 @@ struct skt_viewer : cg::visualization::viewer_adapter
        drawer.draw_line(p2, p4);
    }
 
-
-
    void draw_node(CompressedNode<double> *node, cg::visualization::drawer_type & drawer) const
    {
         if(node->childrensize)
@@ -106,8 +105,6 @@ struct skt_viewer : cg::visualization::viewer_adapter
                         << "points: " << pts << cg::visualization::endl;
    }
 
-
-    // mouse rbutton click
    bool on_release(const point_2f & p)
    {
        if(insertmode)
@@ -130,6 +127,8 @@ struct skt_viewer : cg::visualization::viewer_adapter
        {
            if(tree.insert(p))
                pts++;
+           if(level<0)
+               level = tree.getMaxLevel();
        }
        else
        {
@@ -151,14 +150,14 @@ struct skt_viewer : cg::visualization::viewer_adapter
                printf("on top already");
            }
        } else if (key == Qt::Key_Minus) {
-           if(tree.getMaxLevel() > level)
+           if(level > 0)
            {
-               ++level;
+               --level;
                printf("view level changed\n");
            }
            else
            {
-               printf("on top already");
+               printf("on bottom already");
            }
        } else if (key == Qt::Key_I) {
            insertmode = true;

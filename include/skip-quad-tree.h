@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <utility>
 
+#include <boost/noncopyable.hpp>
+
 using namespace std;
 
 using std::vector;
@@ -17,7 +19,7 @@ typedef pair<pair<int,int>, int> p3i;
 // TODO: с такими координатами как сейчас - все упадет. переделать на даблы.
 
 template <class T>
-class SkipQuadTree
+class SkipQuadTree// : boost::noncopyable
 {
 
 private:
@@ -30,8 +32,9 @@ private:
     {
         CompressedNode<T>* node = new CompressedNode<T>(max_area, p);
         trees.push_back(node);
+        index.push_back(map<p3i, CompressedNode<T>* >());
         int level = trees.size()-1;
-        p3i coords = trees.back()->c;
+        p3i coords = node->c;
         index[level][coords] = node;
     }
 
@@ -67,6 +70,10 @@ private:
     {
         CompressedNode<T> * cur = index[level][coords];
         cur = cur->find(p);
+
+        if(cur == NULL)
+            return false; // так быть не должно, но мало ли
+
         if(level == 0)
         {
             cur->insert(p);
@@ -132,6 +139,7 @@ private:
 
 public:
     vector<CompressedNode<T> * > trees;
+
     SkipQuadTree(T side=2048)
     {
         max_area = aabb<T>(side);
@@ -166,11 +174,17 @@ public:
         int curlevel = trees.size()-1;
         if(curlevel < 0)
         {
-            push(p);
-            return true;
+            if(max_area.contains(p))
+            {
+                push(p);
+                return true;
+            }
+            else
+                return false;
         }
 
-        bool flag = insert_impl(p, curlevel, trees[curlevel]->c);
+        p3i coords = trees[curlevel]->c;
+        bool flag = insert_impl(p, curlevel, coords);
         if((*r)()>0)
             push(p);
         return flag;
@@ -190,9 +204,11 @@ public:
 
     vector<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0)
     {
-        point_2t<T> dim(rightDown.x-leftUp.x, leftUp.y - rightDown.y);
-        point_2t<T> pos(leftUp.x, leftUp.y-dim.y);
-        aabb<T> box(pos, dim);
+//        point_2t<T> dim(rightDown.x-leftUp.x, leftUp.y - rightDown.y);
+//        point_2t<T> pos(leftUp.x, leftUp.y-dim.y);
+//        aabb<T> box(pos, dim);
+        aabb<T> box;
+        box = box.getByPoints(leftUp, rightDown);
         return getPoints(box, eps);
     }
 
