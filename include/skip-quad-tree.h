@@ -106,15 +106,72 @@ private:
         }
     }
 
+    vector<point_2t<T> > getAll(int level, CompressedNode<T>* node)
+    {
+        vector<point_2t<T> > res;
+        bool childUsed[4] = {false, false, false, false};
+        int used=0;
+
+//        if(node->childrensize == 0 && level == 0)
+//        {
+//            res.push_back(node->point);
+//            return res;
+//        }
+
+        while(used!=4)
+        {
+            for(int i=0; i<4; ++i)
+            {
+                if(childUsed[i] || node->children[i] == NULL)
+                    continue;
+
+                CompressedNode<T>* child = node->children[i];
+
+                if(level != 0 && index[level-1].find(node->boundary) != index[level-1].end())
+                {
+                    if(child != NULL && child->boundary.dimension.x == node->boundary.dimension.x/2)
+                    {
+                        vector<point_2t<T> > v = getAll(level, child);
+                        res.insert(res.end(), v.begin(), v.end());
+                        childUsed[i] = true;
+                        ++used;
+                    }
+                }
+                else
+                {
+                    childUsed[i] = true;
+                    ++used;
+                    vector<point_2t<T> > v = getAll(level, child);
+                    res.insert(res.end(), v.begin(), v.end());
+                }
+            }
+
+            if(level != 0 && index[level-1].find(node->boundary)!=index[level-1].end())
+                node = index[--level][node->boundary];
+            else
+                break;
+        }
+        return res;
+    }
+
+
     vector<point_2t<T> > getPoints_impl(aabb<T> box, double eps, int level, CompressedNode<T>* node)
     {
         vector<point_2t<T> > res;
         if(!box.overlays(node->boundary))
+            return {};
+
+        if(node->childrensize == 0)
+        {
+            res.push_back(node->point);
             return res;
+        }
 
 
         if(box.contains(node->boundary) || (box+eps).contains(node->boundary))
-            return index[0][node->boundary]->getPoints();
+        {
+            return getAll(level, node);
+        }
 
         if(level == 0)
             return node->getPoints(box, eps);
@@ -128,18 +185,32 @@ private:
             {
                 if(childUsed[i] || node->children[i] == NULL)
                     continue;
-                //if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
+
+            //if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
+
+                //if(level != 0 && index[level-1][node->boundary] != NULL)
+                //{
+                CompressedNode<T>* child = node->children[i];
                 // near depth or no more levels
-                if(node->children[i]->boundary.dimension.x == node->boundary.dimension.x/2 || level ==0)
+                if(child->childrensize != 0 &&   // нельзя вызываться от листа если не лвл0
+                        child->boundary.dimension.x == node->boundary.dimension.x/2)
                 {
-                    vector<point_2t<T> > v = getPoints_impl(box, eps, level, node->children[i]);
+                    vector<point_2t<T> > v = getPoints_impl(box, eps, level, child);
                     res.insert(res.end(), v.begin(), v.end());
                     childUsed[i] = true;
                     ++used;
                 }
+                //}
+                else if(level == 0 || index[level-1].find(node->boundary)==index[level-1].end())
+                {
+                    childUsed[i] = true;
+                    ++used;
+                    vector<point_2t<T> > v = child->getPoints(box, eps);
+                    res.insert(res.end(), v.begin(), v.end());
+                }
             }
 
-            if(level != 0)
+            if(level != 0 && index[level-1].find(node->boundary)!=index[level-1].end())
                 node = index[--level][node->boundary];
             else
                 break;
@@ -199,14 +270,16 @@ public:
 
     vector<point_2t<T> > getPoints(aabb<T> box, double eps=0.0)
     {
-        int level = trees.size()-1;
-        if(level<0)
-        {
-            vector<point_2t<T> > res;
-            return res;
-        }
-        CompressedNode<T> * node = trees[level];
-        return getPoints_impl(box, eps, level, node);
+        int curlevel = trees.size()-1;
+
+        while(curlevel >=0 && trees[curlevel]->childrensize == 0)
+            curlevel--;
+
+        if(curlevel<0)
+            return {};
+
+        CompressedNode<T> * node = trees[curlevel];
+        return getPoints_impl(box, eps, curlevel, node);
     }
 
     vector<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0)

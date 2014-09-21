@@ -24,6 +24,7 @@ struct skt_viewer : cg::visualization::viewer_adapter
        level = -1;
        insertmode = true;
        eps = 0.001;
+       query = aabb<double>(0);
    }
 
    void draw_rect(aabb<double> box, cg::visualization::drawer_type & drawer, QColor color = Qt::white) const
@@ -98,6 +99,7 @@ struct skt_viewer : cg::visualization::viewer_adapter
         {
             drawer.draw_point(to_highlight[i], 4);
         }
+        draw_rect(query, drawer, Qt::red);
    }
 
     // print in the corner
@@ -123,6 +125,8 @@ struct skt_viewer : cg::visualization::viewer_adapter
 
 
        to_highlight = tree.getPoints(pending_point, p, eps);
+
+       query = query.getByPoints(pending_point, p);
    }
 
    bool on_press(const cg::point_2f & p)
@@ -165,6 +169,7 @@ struct skt_viewer : cg::visualization::viewer_adapter
            }
        } else if (key == Qt::Key_I) {
            insertmode = true;
+           query = aabb<double>(0);
            printf("INSERT MODE\n");
        } else if (key == Qt::Key_Q && level>=0) {
            insertmode = false;
@@ -183,6 +188,7 @@ private:
    point_2 pending_point;
    double eps;
    vector<point_2> to_highlight;
+   aabb<double> query;
 };
 
 int main(int argc, char ** argv)
