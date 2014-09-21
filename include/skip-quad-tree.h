@@ -111,8 +111,11 @@ private:
         vector<point_2t<T> > res;
         if(!box.overlays(node->boundary))
             return res;
+
+
         if(box.contains(node->boundary) || (box+eps).contains(node->boundary))
             return index[0][node->boundary]->getPoints();
+
         if(level == 0)
             return node->getPoints(box, eps);
 
@@ -126,7 +129,8 @@ private:
                 if(childUsed[i] || node->children[i] == NULL)
                     continue;
                 //if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
-                if(node->children[i]->boundary.dimension.x == node->boundary.dimension.x*2) // near depth or no more levels
+                // near depth or no more levels
+                if(node->children[i]->boundary.dimension.x == node->boundary.dimension.x/2 || level ==0)
                 {
                     vector<point_2t<T> > v = getPoints_impl(box, eps, level, node->children[i]);
                     res.insert(res.end(), v.begin(), v.end());
@@ -136,7 +140,7 @@ private:
             }
 
             if(level != 0)
-                node = index[level-1][node->boundary];
+                node = index[--level][node->boundary];
             else
                 break;
         }
