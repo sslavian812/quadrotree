@@ -45,6 +45,7 @@ struct skt_viewer : cg::visualization::viewer_adapter
        drawer.draw_line(p4, p1);
    }
 
+
    void draw_cross(aabb<double> box, cg::visualization::drawer_type & drawer, QColor color = Qt::white) const
    {
        drawer.set_color(color);
@@ -85,7 +86,10 @@ struct skt_viewer : cg::visualization::viewer_adapter
    void draw(cg::visualization::drawer_type & drawer) const
    {
        if(level<0)
+       {
+           draw_rect(tree.max_area, drawer);
            return;
+       }
         draw_rect(tree.trees[level]->boundary, drawer);
         draw_node(tree.trees[level], drawer);
 

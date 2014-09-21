@@ -42,7 +42,7 @@ TEST(skip_tree_contains, random_point_2ts)
     {
         point_2 p(r(), r());
         point_2ts.push_back(p);
-        cout<<"insering: "<<p<<endl;
+       // cout<<"insering: "<<p<<endl;
         tree.insert(p);
     }
 

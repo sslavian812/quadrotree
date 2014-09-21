@@ -14,31 +14,35 @@ using namespace std;
 using std::vector;
 using util::uniform_random_real;
 using std::map;
-typedef pair<pair<int,int>, int> p3i;
+//typedef pair<pair<int,int>, int> p3i;
 
 // TODO: с такими координатами как сейчас - все упадет. переделать на даблы.
 
 template <class T>
 class SkipQuadTree// : boost::noncopyable
 {
+public:
+    vector<CompressedNode<T> * > trees;
+    aabb<T> max_area;
+
+    // TODO: add get methods to temporaly public fields
 
 private:
+    vector< map<aabb<T>, CompressedNode<T>* > > index;
 
-    vector< map<p3i, CompressedNode<T>* > > index;
-    aabb<T> max_area;
     uniform_random_real<double> *r;
 
     void push(point_2t<T> p)
     {
         CompressedNode<T>* node = new CompressedNode<T>(max_area, p);
         trees.push_back(node);
-        index.push_back(map<p3i, CompressedNode<T>* >());
+        index.push_back(map<aabb<T>, CompressedNode<T>* >());
         int level = trees.size()-1;
-        p3i coords = node->c;
+        aabb<T> coords = node->boundary;
         index[level][coords] = node;
     }
 
-    bool contains_impl(point_2t<T> p, int curlevel, p3i coords)
+    bool contains_impl(point_2t<T> p, int curlevel, aabb<T> coords)
     {
         CompressedNode<T> * curnode = index[curlevel][coords];
                 curnode = curnode->find(p);
@@ -61,12 +65,12 @@ private:
         if(curlevel == 0)
             return false;
 
-        p3i curcoords = curnode->c;
+        aabb<T> curcoords = curnode->boundary;
 
         return contains_impl(p, curlevel-1, curcoords);
     }
 
-    bool insert_impl(point_2t<T> p, int level, p3i coords)
+    bool insert_impl(point_2t<T> p, int level, aabb<T> coords)
     {
         CompressedNode<T> * cur = index[level][coords];
         cur = cur->find(p);
@@ -76,13 +80,14 @@ private:
 
         if(level == 0)
         {
-            cur->insert(p);
-            return true;
-            //TODO: посмотреть, что вернет инсерт и отвечать задесь вставилась\не вставилась
+            cur = cur->insert(p);
+            if(cur != NULL)
+                index[level][cur->boundary] = cur;
+            return (cur != NULL);
         }
         else
         {
-            if(insert_impl(p, level-1, cur->c) && (*r)()>0)
+            if(insert_impl(p, level-1, cur->boundary) && (*r)()>0)
             {
                 CompressedNode<T> * temp_node = cur->insert(p);
                 // нода - родитель листа с вставленой точкой.
@@ -90,8 +95,8 @@ private:
                 if(temp_node == NULL)
                     return false; // TODO: правда ли это так не бывает?
 
-                index[level][temp_node->c] = temp_node;
-                    // или добавится нова вершина или ничего не поменяется.
+                index[level][temp_node->boundary] = temp_node;
+                    // или добавится новая вершина или ничего не поменяется.
                 return true;
             }
             else
@@ -107,7 +112,7 @@ private:
         if(!box.overlays(node->boundary))
             return res;
         if(box.contains(node->boundary) || (box+eps).contains(node->boundary))
-            return index[0][node->c]->getPoints();
+            return index[0][node->boundary]->getPoints();
         if(level == 0)
             return node->getPoints(box, eps);
 
@@ -120,7 +125,8 @@ private:
             {
                 if(childUsed[i] || node->children[i] == NULL)
                     continue;
-                if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
+                //if(node->children[i]->c.second == node->c.second+1) // near depth or no more levels
+                if(node->children[i]->boundary.dimension.x == node->boundary.dimension.x*2) // near depth or no more levels
                 {
                     vector<point_2t<T> > v = getPoints_impl(box, eps, level, node->children[i]);
                     res.insert(res.end(), v.begin(), v.end());
@@ -130,7 +136,7 @@ private:
             }
 
             if(level != 0)
-                node = index[level-1][node->c];
+                node = index[level-1][node->boundary];
             else
                 break;
         }
@@ -138,19 +144,13 @@ private:
     }
 
 public:
-    vector<CompressedNode<T> * > trees;
+
 
     SkipQuadTree(T side=2048)
     {
         max_area = aabb<T>(side);
         r = new uniform_random_real<double>(-1.0, 1.0);
     }
-
-    //bool contains(point_2t<T> p); // OK
-    //bool insert(point_2t<T> p); // OK
-    //vector<point_2t<T> > getPoints(aabb<T> box, double eps=0.0); // OK
-    //vector<point_2t<T> > getPoints(point_2t<T> leftUp, point_2t<T> rightDown, double eps=0.0); // OK
-
 
     bool contains(point_2t<T> p)
     {
@@ -166,7 +166,7 @@ public:
         if(curlevel < 0)
             return false;
 
-        return contains_impl(p, curlevel, trees[curlevel]->c);
+        return contains_impl(p, curlevel, trees[curlevel]->boundary);
     }
 
     bool insert(point_2t<T> p)
@@ -183,11 +183,14 @@ public:
                 return false;
         }
 
-        p3i coords = trees[curlevel]->c;
+        if(contains(p))
+            return false;
+
+        aabb<T> coords = trees[curlevel]->boundary;
         bool flag = insert_impl(p, curlevel, coords);
-        if((*r)()>0)
+        if(flag && (*r)()>0)
             push(p);
-        return flag;
+        return true;
     }
 
     vector<point_2t<T> > getPoints(aabb<T> box, double eps=0.0)

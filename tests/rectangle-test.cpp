@@ -13,7 +13,7 @@ using cg::point_2t;
 
 const double eps = 0.1;
 
-TEST(simple_contains, DISABLED_manual_points)
+TEST(simple_contains, random_points)
 {
     vector<point_2 > points;
     SkipQuadTree<double> tree(256);

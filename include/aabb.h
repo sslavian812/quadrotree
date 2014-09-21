@@ -33,6 +33,16 @@ struct aabb
         return box;
     }
 
+    inline bool operator<(aabb<T> const & other) const
+    {
+       if (position == other.position)
+          return dimension < other.dimension;
+       else
+          return position < other.position;
+    }
+
+
+
     bool contains(point_2t<T> point)
     {
         if((point.x >= position.x) && (point.x < position.x + dimension.x))

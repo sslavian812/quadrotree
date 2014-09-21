@@ -66,7 +66,7 @@ public:
         {
             point_2t<T> p2 = point;
             if(p2 == p)
-                return NULL; // вставлять не будем, но сделаем вид, что вставили.
+                return this; // вставлять не будем, но сделаем вид, что вставили.
                              // если возвращать NULL, то может что-нибудь сломаться
                              // TODO: если не NULL, все равно ведь падает из-за этого иногда
             int part2 = boundary.whatPart(p2);
@@ -122,6 +122,7 @@ public:
                 // т.к. лист полноразмерный, а мог бы быть сжатый
                 point_2t<T> p2 = children[part]->point;
                 delete children[part];
+                --childrensize;
 
                 // TODO: boilerplate code
                 cbox area = getBest(p,p2);
