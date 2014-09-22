@@ -12,7 +12,7 @@
 using namespace std;
 
 
-TEST(compressed_contains, DISABLED_random_point_2ts)
+TEST(compressed_contains, random_point_2ts)
 {
 
     vector<point_2t<double> > point_2ts;

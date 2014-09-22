@@ -71,25 +71,21 @@ struct aabb
 
     bool overlays(aabb<T> other)
     {
-        //return (this->contains(other) || other->contains(*(this)));
-
         T dx = other.dimension.x;
         T dy = other.dimension.y;
         T x = other.position.x;
         T y = other.position.y;
         
-        point_2t<T> p0(x, y), p1(x+dx, y), p2(x, y+dy), p3(x+dx, y+dy);
-        if(contains(p0) || contains(p1) || contains(p2) || contains(p3))
-            return true;
+		point_2t<T> al(x, y+dy), ar(x+dx, y);
+		
         dx = dimension.x;
         dy = dimension.y;
         x = position.x;
         y = position.y;
-        p0=point_2t<T>(x, y), p1=point_2t<T>(x+dx, y), p2=point_2t<T>(x, y+dy), p3=point_2t<T>(x+dx, y+dy);
-        if(other.contains(p0) || other.contains(p1) || other.contains(p2) || other.contains(p3))
-            return true;
-
-        return false;
+		
+        point_2t<T> bl(x, y+dy), br(x+dx, y);
+		
+		return !(al.y < br.y || ar.y > bl.y || ar.x < bl.x || al.x > br.x);
     }
 
     aabb<T> operator+(T eps)
